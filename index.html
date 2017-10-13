@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="Sky.js"></script>
+    <script src="Land.js"></script>
+    <script src="Pipe2.js"></script>
+    <script src="Bird.js"></script>
+
+
+    <style>
+        #canvas {
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+<canvas width="800" height="600" id="canvas"></canvas>
+<script>
+    var canvas = document.getElementById("canvas");
+    var context = canvas.getContext("2d");
+
+    //1. 先把所有的图片加载出来
+    var birdsImg= new Image();
+    var landImg = new Image();
+    var pipe1Img = new Image();
+    var pipe2Img = new Image();
+    var skyImg = new Image();
+
+    birdsImg.src = "./img/birds.png";
+    landImg.src = "./img/land.png";
+    pipe1Img.src = "./img/pipe1.png";
+    pipe2Img.src = "./img/pipe2.png";
+    skyImg.src = "./img/sky.png";
+
+    var count = 0;
+    var imagesArr = [birdsImg, landImg, pipe1Img, pipe2Img, skyImg];
+    imagesArr.forEach(function (img) {
+        img.onload = function () {
+            count += 1;
+            if (count == imagesArr.length) {
+                console.log("所有的图片都加载成功了");
+
+                //创建一个角色数组
+                var rolesArr = [];
+                var bird;
+
+                function createRoles() {
+                    //创建所有的天空对象
+                    for (var i = 0; i<2; i++) {
+                        //{image: 图片, x： 100, canvas: canvas, context: context}
+                        var sky = new Sky({
+                            image: skyImg,
+                            x: i * skyImg.width,
+                            canvas: canvas,
+                            context: context
+                        });
+
+                        rolesArr.push(sky);
+                    }
+                    //创建所有的陆地对象
+                    for (var i = 0; i<5; i++) {
+                        var land = new Land({
+                            image: landImg,
+                            x: i * landImg.width,
+                            canvas: canvas,
+                            context: context
+                        });
+
+                        //放到角色数组中
+                        rolesArr.push(land);
+                    }
+                    //创建管道对象
+                    var gap = (canvas.width - 6*pipe1Img.width)/5;
+                    for (var i = 0; i<6; i++) {
+                        var pipe = new Pipe({
+                            image: pipe1Img,
+                            x: 300 + (pipe1Img.width + gap)*i,
+                            canvas: canvas,
+                            context: context,
+                            gap:gap,
+                            offsetY: landImg.height,
+                            topImage: pipe2Img
+                        });
+
+                        rolesArr.push(pipe);
+                    }
+
+                    //创建小鸟对象
+                    bird = new Bird({
+                        image: birdsImg,
+                        canvas: canvas,
+                        context: context,
+                        x: 100,
+                        y: 100,
+                        w: birdsImg.width/3,
+                        h: birdsImg.height
+                    });
+
+                    rolesArr.push(bird);
+
+                }
+
+                //创建角色对象
+                createRoles();
+
+                function action() {
+                    //1. 把画布清空
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+                    //2. 要在绘制小鸟之前添加路径
+                    context.beginPath();
+
+                    //2. 绘制角色（自己绘制自己）
+                    rolesArr.forEach(function (role) {
+                        role.draw();
+                    });
+
+                    //写文字
+                    var now = new Date();
+                    var t = now - startTime; //毫秒数
+                    var s = Math.round(t/1000);
+                    //算出小时数
+                    var h = Math.floor(s / 3600);
+                    //算出分钟数
+                    var m = Math.floor(s / 60) % 60;
+                    //算出秒数
+                    s = s % 60;
+
+                    var text = "您坚持了"+h+"小时"+m+"分"+s+"秒";
+                    context.font = "30px 微软雅黑";
+                    context.fillStyle = "hotpink";
+                    context.textAlign = "right";
+                    context.textBaseline = "top";
+                    context.fillText(text, canvas.width, 0);
+
+
+                    //3. 判断小鸟是否挂掉了
+                    //小鸟掉地上了
+                    if (bird.y >= canvas.height - landImg.height - 10) {
+                        return;
+                    }
+
+                    //小鸟撞柱子上了
+                    //isPointInPath(x, y)这个点是否在路径里面
+                    if (context.isPointInPath(bird.x, bird.y)) {
+                        return;
+                    }
+
+                    window.requestAnimationFrame(action);
+                }
+
+                action();
+                //开始时间
+                var startTime = new Date();
+
+                //对canvas添加点击事件，当点击的时候，小鸟往上蹦一下
+                canvas.onclick = function () {
+                    //取到小鸟对象
+                    bird.v = - 0.2;
+                }
+            }
+        }
+    });
+
+
+</script>
+</body>
+</html>
